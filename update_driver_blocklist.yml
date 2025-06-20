@@ -1,0 +1,104 @@
+name: 'Update Driver Blocklist'
+
+on:
+  push:
+    paths:
+      - 'tools/scripts/*'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  run-script:
+    runs-on: windows-latest
+    steps:
+      - name: checkout repo for build results script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/scripts/update_driver_blocklist.ps1
+          sparse-checkout-cone-mode: false
+      - name: Run blocklist generator
+        shell: powershell
+        run: |
+          dir
+          & .\tools\scripts\update_driver_blocklist.ps1
+      - name: Upload build summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-summary
+          path: C:\Windows\content\match\T1211.100.KnownVulnerableDrivers.json
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: upsightsecurity/vulnerable-driver-storage
+          token: ${{ secrets.TARGET_REPO_PAT }}
+          path: target-repo
+      - name: Copy output files
+        run: |
+          $date = Get-Date -Format "yyyy-MM-dd"
+          $outputName = "KnownVulnerableDrivers-$date.json"
+
+          Copy-Item -Path "C:\Windows\content\match\T1211.100.KnownVulnerableDrivers.json" -Destination "target-repo\$outputName" -Force
+          cd target-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Add output file"
+          git push
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#jobs:
+#    build-and-deploy:
+#        runs-on: ubuntu-latest
+#        steps:
+#        - name: 'Checkout GitHub Action'
+#          uses: actions/checkout@main
+#          
+#        - name: 'Login via Azure CLI'
+#          uses: azure/login@v2
+#          with:
+#            creds: ${{ secrets.AZURE_CREDENTIALS }}
+#        
+#        - name: 'Build and push image'
+#          uses: azure/docker-login@v1
+#          with:
+#            login-server: upsightcontainerregistry.azurecr.io
+#            username: ${{ secrets.ACR_USER }}
+#            password: ${{ secrets.ACR_PASSWORD }}
+#        - run: |
+### UPDATED            docker build ./tools/scripts -t upsightcontainerregistry.azurecr.io/update-driver-blocklist-script:${{ github.sha }}
+### UPDATED            docker push upsightcontainerregistry.azurecr.io/update-driver-blocklist-script:${{ github.sha }}
+#
+#        - name: 'Delete existing container instance'
+#          run: |
+### UPDATED            az container delete --name update-driver-blocklist-script --resource-group ${{ secrets.DETONATION_LAB_RESOURCE_GROUP }} --yes
+#          continue-on-error: true
+#        
+#        - name: 'Container Create for Driver Blocklist Docker Image'
+#          run: |
+#            az container create \
+#              -g ${{ secrets.DETONATION_LAB_RESOURCE_GROUP }} \
+### UPDATED              --name update-driver-blocklist-script \
+### UPDATED              --dns-name-label update-driver-blocklist-script-${{ github.run_number }} \
+#              --image upsightcontainerregistry.azurecr.io/update-driver-blocklist-script:${{ github.sha }} \
+#              --registry-login-server upsightcontainerregistry.azurecr.io \
+#              --registry-username ${{ secrets.ACR_USER }} \
+#              --registry-password ${{ secrets.ACR_PASSWORD }} \
+### IDEK what do here              --assign-identity /subscriptions/f0dcf2a1-79f5-400e-b869-1f7375ce64d2/resourceGroups/${{ secrets.DETONATION_LAB_RESOURCE_GROUP }}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/discord-bot-id \
+#              --location 'west us' \
+#              --os-type Linux \
+#              --cpu 1 \
+#              --memory 1 \
+#              --restart-policy OnFailure
