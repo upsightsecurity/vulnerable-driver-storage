@@ -353,11 +353,11 @@ function Get-SHA256HashesFromLolDrivers {
         $response = Invoke-RetryWebRequest -Uri $LolDriversUrl -MaxRetries $MaxRetries
         $jsonContent = $response.Content
 
-        #Add-Type -AssemblyName System.Web.Extensions
-        #$jsonSerializer = New-Object -TypeName System.Web.Script.Serialization.JavaScriptSerializer
-        #$jsonSerializer.MaxJsonLength = [int]::MaxValue
-        #$lolDriversData = $jsonSerializer.DeserializeObject($  jsonContent)
-        $lolDriversData = $jsonContent | ConvertFrom-Json -AsHashtable
+        Add-Type -AssemblyName System.Web.Extensions
+        $jsonSerializer = New-Object -TypeName System.Web.Script.Serialization.JavaScriptSerializer
+        $jsonSerializer.MaxJsonLength = [int]::MaxValue
+        $lolDriversData = $jsonSerializer.DeserializeObject($jsonContent)
+        #$lolDriversData = $jsonContent | ConvertFrom-Json -AsHashtable
         Write-Stage "Processing LOLDrivers data..."
         $hashList = @()
         
@@ -911,7 +911,8 @@ try {
                 $lastRunDate = [DateTime]::Parse($lastRunTime).Date
                 $todayUtc = [DateTime]::UtcNow.Date
                 
-                if ($lastRunDate -eq $todayUtc) {
+                #if ($lastRunDate -eq $todayUtc) {
+                if (1 -eq 0) {
                     Write-Log "Vulnerable Driver Block List was already checked today. Skipping." -Level ([LogLevel]::SUCCESS)
                     return 0
                 }
