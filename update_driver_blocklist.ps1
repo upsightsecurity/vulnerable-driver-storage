@@ -21,7 +21,7 @@ if (-not $TempDir) {
 
 $ZipFilePath = Join-Path $TempDir "VulnerableDriverBlockList.zip"
 $ExtractPath = Join-Path $TempDir "VulnerableDriverBlockList"
-$JsonFilePath = "../../Windows/content/match/T1211.100.KnownVulnerableDrivers.json"
+$JsonFilePath = "../../Outputs/T1211.100.KnownVulnerableDrivers.json"
 $XmlFileName = "SiPolicy_Enforced.xml"
 $LastRunFilePath = Join-Path $TempDir "upvulndriverlist.lastcheck"
 $LogFilePath = Join-Path $TempDir "upvulndriverlist.log"

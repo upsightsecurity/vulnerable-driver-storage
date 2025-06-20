@@ -1,50 +1,39 @@
 name: 'Update Driver Blocklist'
 
 on:
-  push:
-    paths:
-      - 'tools/scripts/*'
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   run-script:
     runs-on: windows-latest
     steps:
-      - name: checkout repo for build results script
+      - name: checkout repo for driver blocklist
         uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            tools/scripts/update_driver_blocklist.ps1
-          sparse-checkout-cone-mode: false
       - name: Run blocklist generator
         shell: powershell
         run: |
           dir
-          & .\tools\scripts\update_driver_blocklist.ps1
-      - name: Upload build summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-summary
-          path: C:\Windows\content\match\T1211.100.KnownVulnerableDrivers.json
-      - name: Checkout target repo
-        uses: actions/checkout@v4
-        with:
-          repository: upsightsecurity/vulnerable-driver-storage
-          token: ${{ secrets.TARGET_REPO_PAT }}
-          path: target-repo
+          & .\update_driver_blocklist.ps1
       - name: Copy output files
         run: |
           $date = Get-Date -Format "yyyy-MM-dd"
           $outputName = "KnownVulnerableDrivers-$date.json"
+          $outputPath = "Outputs/$outputName"
 
-          Copy-Item -Path "C:\Windows\content\match\T1211.100.KnownVulnerableDrivers.json" -Destination "target-repo\$outputName" -Force
-          cd target-repo
+          Copy-Item -Path "./Outputs/T1211.100.KnownVulnerableDrivers.json" -Destination $outputPath -Force
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Add output file"
-          git push
+          git add $outputPath
+
+          if (git diff --cached --quiet) {
+            Write-Host "No changes to commit."
+          } else {
+            git commit -m "Add updated driver blocklist for $date"
+            git push
+          }
 
 
 
